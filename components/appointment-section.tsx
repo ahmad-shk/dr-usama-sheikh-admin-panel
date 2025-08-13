@@ -24,7 +24,7 @@ import {
 export function AppointmentSection() {
   const dispatch = useAppDispatch()
   const { appointments } = useAppSelector((state) => state.appointments)
-  const [appointmentFilter, setAppointmentFilter] = useState<"all" | "pending" | "confirmed" | "rejected">("all")
+  const [appointmentFilter, setAppointmentFilter] = useState<"all" | "pending" | "completeded" | "rejected">("all")
   const [showPricePopup, setShowPricePopup] = useState(false)
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null)
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null)
@@ -39,7 +39,7 @@ export function AppointmentSection() {
     return dateB - dateA // Latest first
   })
 
-  const confirmedAppointments = sortedAppointments.filter((apt) => apt.status === "confirmed")
+  const completededAppointments = sortedAppointments.filter((apt) => apt.status === "completed")
   const rejectedAppointments = sortedAppointments.filter((apt) => apt.status === "rejected")
   const pendingAppointments = sortedAppointments.filter((apt) => apt.status === "pending" || !apt.status)
   const totalAppointments = sortedAppointments.length
@@ -71,7 +71,7 @@ export function AppointmentSection() {
     window.open(whatsappUrl, "_blank")
   }
 
-  const handleConfirmAppointment = (appointmentId: string) => {
+  const handlecompletedAppointment = (appointmentId: string) => {
     setSelectedAppointmentId(appointmentId)
     setSelectedPrice(null)
     setShowPricePopup(true)
@@ -89,8 +89,8 @@ export function AppointmentSection() {
       await dispatch(
         updateAppointmentStatusAction({
           id: selectedAppointmentId,
-          status: "confirmed",
-          balance: selectedPrice,
+          status: "completed",
+          amount: selectedPrice,
         }),
       ).unwrap()
 
@@ -104,9 +104,9 @@ export function AppointmentSection() {
     }
   }
 
-  const updateAppointmentStatusHandler = async (id: string, action: "confirm" | "reject") => {
-    if (action === "confirm") {
-      handleConfirmAppointment(id)
+  const updateAppointmentStatusHandler = async (id: string, action: "completed" | "reject") => {
+    if (action === "completed") {
+      handlecompletedAppointment(id)
       return
     }
 
@@ -181,11 +181,11 @@ export function AppointmentSection() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-40">
                   <DropdownMenuItem
-                    onClick={() => updateAppointmentStatusHandler(appointment._id || appointment.id, "confirm")}
+                    onClick={() => updateAppointmentStatusHandler(appointment._id || appointment.id, "completed")}
                     className="text-green-600 hover:text-green-700 hover:bg-green-50"
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    Confirm
+                    completed
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => updateAppointmentStatusHandler(appointment._id || appointment.id, "reject")}
@@ -198,14 +198,14 @@ export function AppointmentSection() {
               </DropdownMenu>
             ) : (
               <Button
-                variant={appointmentStatus === "confirmed" ? "default" : "destructive"}
+                variant={appointmentStatus === "completeded" ? "default" : "destructive"}
                 size="sm"
                 disabled
                 className={`capitalize w-full sm:w-auto text-xs sm:text-sm ${
-                  appointmentStatus === "confirmed" ? "bg-green-600 text-white" : "bg-red-600 text-white"
+                  appointmentStatus === "completeded" ? "bg-green-600 text-white" : "bg-red-600 text-white"
                 }`}
               >
-                {appointmentStatus === "confirmed" ? (
+                {appointmentStatus === "completeded" ? (
                   <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                 ) : (
                   <XCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
@@ -277,8 +277,8 @@ export function AppointmentSection() {
             <div className="flex items-center gap-2 sm:gap-3">
               <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 flex-shrink-0" />
               <div>
-                <p className="text-xs sm:text-sm text-gray-600">Confirmed</p>
-                <p className="text-lg sm:text-2xl font-bold text-green-600">{confirmedAppointments.length}</p>
+                <p className="text-xs sm:text-sm text-gray-600">completeded</p>
+                <p className="text-lg sm:text-2xl font-bold text-green-600">{completededAppointments.length}</p>
               </div>
             </div>
           </CardContent>
@@ -337,17 +337,17 @@ export function AppointmentSection() {
                 Pending ({pendingAppointments.length})
               </Button>
               <Button
-                variant={appointmentFilter === "confirmed" ? "default" : "outline"}
+                variant={appointmentFilter === "completeded" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setAppointmentFilter("confirmed")}
+                onClick={() => setAppointmentFilter("completeded")}
                 className={`flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 ${
-                  appointmentFilter === "confirmed"
+                  appointmentFilter === "completeded"
                     ? "bg-green-600 hover:bg-green-700 text-white"
                     : "text-green-600 border-green-200 hover:bg-green-50"
                 }`}
               >
                 <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-                Confirmed ({confirmedAppointments.length})
+                completeded ({completededAppointments.length})
               </Button>
               <Button
                 variant={appointmentFilter === "rejected" ? "default" : "outline"}

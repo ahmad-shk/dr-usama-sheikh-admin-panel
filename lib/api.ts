@@ -15,7 +15,6 @@ export interface Appointment {
   updatedAt: string
   status: "pending" | "confirmed" | "rejected"
   amount: number
-  balance?: number // Added optional balance field
 }
 
 export const appointmentAPI = {
@@ -43,18 +42,18 @@ export const appointmentAPI = {
     }
   },
 
-  // Update appointment status with optional balance
+  // Update appointment status with optional amount
   async updateAppointmentStatus(
     id: string,
     status: "pending" | "confirmed" | "rejected",
-    balance?: number,
+    amount?: number,
   ): Promise<Appointment> {
     try {
-      const requestBody: { status: string; balance?: number } = { status }
+      const requestBody: { status: string; amount?: number } = { status }
 
-      // Add balance to request body if provided
-      if (balance !== undefined) {
-        requestBody.balance = balance
+      // Add amount to request body if provided
+      if (amount !== undefined) {
+        requestBody.amount = amount
       }
 
       const response = await fetch(`${API_BASE_URL}/api/appointmentRoutes/${id}`, {

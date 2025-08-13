@@ -11,9 +11,8 @@ export interface Appointment {
   name: string
   phone: string
   message: string
-  status?: "pending" | "confirmed" | "rejected"
+  status?: "pending" | "completed" | "rejected"
   amount?: number
-  balance?: number
   createdAt: string
   updatedAt: string
 }
@@ -39,9 +38,9 @@ export const fetchAppointments = createAsyncThunk("appointments/fetchAppointment
 
 export const updateAppointmentStatus = createAsyncThunk(
   "appointments/updateAppointmentStatus",
-  async ({ id, status, balance }: { id: string; status: string; balance?: number }) => {
-    const response = await appointmentAPI.updateAppointmentStatus(id, status, balance)
-    return { id, status, balance, ...response }
+  async ({ id, status, amount }: { id: string; status: string; amount?: number }) => {
+    const response = await appointmentAPI.updateAppointmentStatus(id, status, amount)
+    return { id, status, amount, ...response }
   },
 )
 
@@ -74,13 +73,13 @@ const appointmentSlice = createSlice({
       })
       // Update appointment status
       .addCase(updateAppointmentStatus.fulfilled, (state, action) => {
-        const { id, status, balance } = action.payload
+        const { id, status, amount } = action.payload
         const appointment = state.appointments.find((apt) => apt._id === id || apt.id === id)
         if (appointment) {
-          appointment.status = status as "pending" | "confirmed" | "rejected"
-          if (balance !== undefined) {
-            appointment.amount = balance
-            appointment.balance = balance
+          appointment.status = status as "pending" | "completed" | "rejected"
+          if (amount !== undefined) {
+            appointment.amount = amount
+            appointment.amount = amount
           }
         }
       })
