@@ -4,28 +4,30 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 
 interface User {
   id: string
-  email: string
+  username: string // Changed from email to username
   name: string
   role: "admin"
 }
 
 interface AuthContextType {
   user: User | null
-  login: (email: string, password: string) => Promise<boolean>
+  login: (username: string, password: string) => Promise<boolean>
   logout: () => void
   isLoading: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+const HARDCODED_TOKEN = "dental_admin_token_2024_secure"
+
 // Mock admin credentials - in real app, this would be handled by backend
 const ADMIN_CREDENTIALS = {
-  email: "admin@dentalclinic.com",
-  password: "admin123",
+  username: "Admin",
+  password: "Admin123",
   user: {
     id: "1",
-    email: "admin@dentalclinic.com",
-    name: "Admin User",
+    username: "Admin", // Changed from email to username
+    name: "Dr Usama Sheikh Admin",
     role: "admin" as const,
   },
 }
@@ -35,22 +37,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Check if user is logged in on app start
+    const token = localStorage.getItem("dental_admin_token")
     const savedUser = localStorage.getItem("dental_admin_user")
-    if (savedUser) {
+
+    if (token === HARDCODED_TOKEN && savedUser) {
       setUser(JSON.parse(savedUser))
     }
     setIsLoading(false)
   }, [])
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string): Promise<boolean> => {
     setIsLoading(true)
 
     // Simulate API call delay
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
+    if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
       setUser(ADMIN_CREDENTIALS.user)
+      localStorage.setItem("dental_admin_token", HARDCODED_TOKEN)
       localStorage.setItem("dental_admin_user", JSON.stringify(ADMIN_CREDENTIALS.user))
       setIsLoading(false)
       return true
@@ -62,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     setUser(null)
+    localStorage.removeItem("dental_admin_token")
     localStorage.removeItem("dental_admin_user")
   }
 

@@ -1,0 +1,91 @@
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
+import { appointmentAPI } from "@/lib/api"
+
+export interface Appointment {
+  _id?: string
+  id?: string
+  clinic: string
+  service: string
+  date: string
+  time: string
+  name: string
+  phone: string
+  message: string
+  status?: "pending" | "confirmed" | "rejected"
+  amount?: number
+  balance?: number
+  createdAt: string
+  updatedAt: string
+}
+
+interface AppointmentState {
+  appointments: Appointment[]
+  loading: boolean
+  error: string | null
+  lastFetch: number
+}
+
+const initialState: AppointmentState = {
+  appointments: [],
+  loading: false,
+  error: null,
+  lastFetch: 0,
+}
+
+export const fetchAppointments = createAsyncThunk("appointments/fetchAppointments", async () => {
+  const response = await appointmentAPI.getAppointments()
+  return response
+})
+
+export const updateAppointmentStatus = createAsyncThunk(
+  "appointments/updateAppointmentStatus",
+  async ({ id, status, balance }: { id: string; status: string; balance?: number }) => {
+    const response = await appointmentAPI.updateAppointmentStatus(id, status, balance)
+    return { id, status, balance, ...response }
+  },
+)
+
+const appointmentSlice = createSlice({
+  name: "appointments",
+  initialState,
+  reducers: {
+    clearError: (state) => {
+      state.error = null
+    },
+    setLastFetch: (state) => {
+      state.lastFetch = Date.now()
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      // Fetch appointments
+      .addCase(fetchAppointments.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(fetchAppointments.fulfilled, (state, action) => {
+        state.loading = false
+        state.appointments = action.payload
+        state.lastFetch = Date.now()
+      })
+      .addCase(fetchAppointments.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.error.message || "Failed to fetch appointments"
+      })
+      // Update appointment status
+      .addCase(updateAppointmentStatus.fulfilled, (state, action) => {
+        const { id, status, balance } = action.payload
+        const appointment = state.appointments.find((apt) => apt._id === id || apt.id === id)
+        if (appointment) {
+          appointment.status = status as "pending" | "confirmed" | "rejected"
+          if (balance !== undefined) {
+            appointment.amount = balance
+            appointment.balance = balance
+          }
+        }
+      })
+  },
+})
+
+export const { clearError, setLastFetch } = appointmentSlice.actions
+export default appointmentSlice.reducer

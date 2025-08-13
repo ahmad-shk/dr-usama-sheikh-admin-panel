@@ -10,11 +10,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Eye, EyeOff, Lock, Mail, Stethoscope } from "lucide-react"
+import { Eye, EyeOff, Lock, User, Stethoscope } from "lucide-react"
 import Link from "next/link"
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
@@ -25,16 +25,16 @@ export default function LoginPage() {
     e.preventDefault()
     setError("")
 
-    if (!email || !password) {
+    if (!username || !password) {
       setError("Please fill in all fields")
       return
     }
 
-    const success = await login(email, password)
+    const success = await login(username, password)
     if (success) {
       router.push("/profile")
     } else {
-      setError("Invalid email or password")
+      setError("Invalid username or password")
     }
   }
 
@@ -59,17 +59,16 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Email Field */}
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="username">Username</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="admin@dentalclinic.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="username"
+                    type="text"
+                    placeholder="Admin"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     className="pl-10"
                     disabled={isLoading}
                   />
@@ -130,13 +129,12 @@ export default function LoginPage() {
           </CardContent>
         </Card>
 
-        {/* Demo Credentials */}
         <Card className="mt-4 bg-blue-50 border-blue-200">
           <CardContent className="pt-4">
             <div className="text-center text-sm text-blue-800">
               <p className="font-medium mb-1">Demo Credentials:</p>
-              <p>Email: admin@dentalclinic.com</p>
-              <p>Password: admin123</p>
+              <p>Username: Admin</p>
+              <p>Password: Admin123</p>
             </div>
           </CardContent>
         </Card>

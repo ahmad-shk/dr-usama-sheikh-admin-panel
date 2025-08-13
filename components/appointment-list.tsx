@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import axios from "axios"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -22,6 +21,65 @@ interface Appointment {
   createdAt: string
   updatedAt: string
 }
+
+const sampleAppointments: Appointment[] = [
+  {
+    id: "689715ed04d0a5d18df7b036",
+    clinic: "Smile Dental Clinic",
+    service: "Root Canal",
+    date: "2025-08-08",
+    time: "11:30 AM",
+    name: "Usama Sheikh",
+    phone: "03001234567",
+    message: "Need quick appointment please",
+    status: "confirmed",
+    amount: 15000,
+    createdAt: "2025-08-09T09:33:33.704+00:00",
+    updatedAt: "2025-08-09T09:33:33.704+00:00",
+  },
+  {
+    id: "689715ed04d0a5d18df7b037",
+    clinic: "Smile Dental Clinic",
+    service: "Teeth Cleaning",
+    date: "2025-08-10",
+    time: "2:00 PM",
+    name: "Ahmed Ali",
+    phone: "03009876543",
+    message: "Regular checkup and cleaning",
+    status: "confirmed",
+    amount: 3000,
+    createdAt: "2025-08-09T10:15:22.704+00:00",
+    updatedAt: "2025-08-09T10:15:22.704+00:00",
+  },
+  {
+    id: "689715ed04d0a5d18df7b038",
+    clinic: "Smile Dental Clinic",
+    service: "Tooth Extraction",
+    date: "2025-08-12",
+    time: "9:00 AM",
+    name: "Fatima Khan",
+    phone: "03001122334",
+    message: "Wisdom tooth removal",
+    status: "rejected",
+    amount: 8000,
+    createdAt: "2025-08-09T11:20:15.704+00:00",
+    updatedAt: "2025-08-09T11:20:15.704+00:00",
+  },
+  {
+    id: "689715ed04d0a5d18df7b039",
+    clinic: "Smile Dental Clinic",
+    service: "Dental Filling",
+    date: "2025-08-15",
+    time: "3:30 PM",
+    name: "Hassan Malik",
+    phone: "03007788990",
+    message: "Cavity filling needed",
+    status: "pending",
+    amount: 5000,
+    createdAt: "2025-08-09T12:45:10.704+00:00",
+    updatedAt: "2025-08-09T12:45:10.704+00:00",
+  },
+]
 
 const getServiceColor = (service: string) => {
   const colors: { [key: string]: string } = {
@@ -62,55 +120,17 @@ const formatCurrency = (amount: number) => {
 }
 
 export function AppointmentList() {
-  const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
+  const [appointments, setAppointments] = useState<Appointment[]>(sampleAppointments)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterService, setFilterService] = useState("all")
   const [filterStatus, setFilterStatus] = useState("all")
-console.log("Fetched appointments")
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      try {
-        const res = await axios.get(`https://dr-usama-sheikh-backend.vercel.app/api/appointmentRoutes`)
-        const data = res.data
-          console.log("Fetched appointments:", data)
-        const mapped = data.map((item: any) => ({
-          id: item._id,
-          clinic: item.clinic,
-          service: item.service,
-          date: item.date,
-          time: item.time,
-          name: item.name,
-          phone: item.phone,
-          message: item.message || "",
-          status: item.status || "pending",
-          amount: item.amount || 0,
-          createdAt: item.createdAt,
-          updatedAt: item.updatedAt,
-        }))
-        setAppointments(mapped)
-      } catch (err) {
-        console.error(err)
-        setError("Failed to fetch appointments.")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchAppointments()
-  }, [])
 
   const handleConfirmAppointment = (id: string) => {
-    setAppointments((prev) =>
-      prev.map((apt) => (apt.id === id ? { ...apt, status: "confirmed" as const } : apt))
-    )
+    setAppointments((prev) => prev.map((apt) => (apt.id === id ? { ...apt, status: "confirmed" as const } : apt)))
   }
 
   const handleRejectAppointment = (id: string) => {
-    setAppointments((prev) =>
-      prev.map((apt) => (apt.id === id ? { ...apt, status: "rejected" as const } : apt))
-    )
+    setAppointments((prev) => prev.map((apt) => (apt.id === id ? { ...apt, status: "rejected" as const } : apt)))
   }
 
   const filteredAppointments = appointments.filter((appointment) => {
@@ -126,14 +146,6 @@ console.log("Fetched appointments")
   })
 
   const uniqueServices = Array.from(new Set(appointments.map((apt) => apt.service)))
-
-  if (loading) {
-    return <div className="text-center py-10">Loading appointments...</div>
-  }
-
-  if (error) {
-    return <div className="text-center py-10 text-red-500">{error}</div>
-  }
 
   return (
     <div className="space-y-6">
