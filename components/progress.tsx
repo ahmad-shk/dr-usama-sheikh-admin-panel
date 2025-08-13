@@ -8,7 +8,7 @@ export function Progress() {
   const { appointments } = useAppSelector((state) => state.appointments)
 
   // Calculate statistics
-  const confirmedAppointments = appointments.filter((apt) => apt.status === "confirmed")
+  const confirmedAppointments = appointments.filter((apt) => apt.status === "completed")
   const rejectedAppointments = appointments.filter((apt) => apt.status === "rejected")
   const pendingAppointments = appointments.filter((apt) => apt.status === "pending")
   const totalEarnings = confirmedAppointments.reduce((sum, apt) => sum + (apt.amount || 0), 0)

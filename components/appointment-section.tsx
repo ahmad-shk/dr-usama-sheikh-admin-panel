@@ -24,7 +24,7 @@ import {
 export function AppointmentSection() {
   const dispatch = useAppDispatch()
   const { appointments } = useAppSelector((state) => state.appointments)
-  const [appointmentFilter, setAppointmentFilter] = useState<"all" | "pending" | "completeded" | "rejected">("all")
+  const [appointmentFilter, setAppointmentFilter] = useState<"all" | "pending" | "completed" | "rejected">("all")
   const [showPricePopup, setShowPricePopup] = useState(false)
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null)
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null)
@@ -39,7 +39,7 @@ export function AppointmentSection() {
     return dateB - dateA // Latest first
   })
 
-  const completededAppointments = sortedAppointments.filter((apt) => apt.status === "completed")
+  const completedAppointments = sortedAppointments.filter((apt) => apt.status === "completed")
   const rejectedAppointments = sortedAppointments.filter((apt) => apt.status === "rejected")
   const pendingAppointments = sortedAppointments.filter((apt) => apt.status === "pending" || !apt.status)
   const totalAppointments = sortedAppointments.length
@@ -198,14 +198,14 @@ export function AppointmentSection() {
               </DropdownMenu>
             ) : (
               <Button
-                variant={appointmentStatus === "completeded" ? "default" : "destructive"}
+                variant={appointmentStatus === "completed" ? "default" : "destructive"}
                 size="sm"
                 disabled
                 className={`capitalize w-full sm:w-auto text-xs sm:text-sm ${
-                  appointmentStatus === "completeded" ? "bg-green-600 text-white" : "bg-red-600 text-white"
+                  appointmentStatus === "completed" ? "bg-green-600 text-white" : "bg-red-600 text-white"
                 }`}
               >
-                {appointmentStatus === "completeded" ? (
+                {appointmentStatus === "completed" ? (
                   <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                 ) : (
                   <XCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
@@ -277,8 +277,8 @@ export function AppointmentSection() {
             <div className="flex items-center gap-2 sm:gap-3">
               <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 flex-shrink-0" />
               <div>
-                <p className="text-xs sm:text-sm text-gray-600">completeded</p>
-                <p className="text-lg sm:text-2xl font-bold text-green-600">{completededAppointments.length}</p>
+                <p className="text-xs sm:text-sm text-gray-600">completed</p>
+                <p className="text-lg sm:text-2xl font-bold text-green-600">{completedAppointments.length}</p>
               </div>
             </div>
           </CardContent>
@@ -337,17 +337,17 @@ export function AppointmentSection() {
                 Pending ({pendingAppointments.length})
               </Button>
               <Button
-                variant={appointmentFilter === "completeded" ? "default" : "outline"}
+                variant={appointmentFilter === "completed" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setAppointmentFilter("completeded")}
+                onClick={() => setAppointmentFilter("completed")}
                 className={`flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 ${
-                  appointmentFilter === "completeded"
+                  appointmentFilter === "completed"
                     ? "bg-green-600 hover:bg-green-700 text-white"
                     : "text-green-600 border-green-200 hover:bg-green-50"
                 }`}
               >
                 <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-                completeded ({completededAppointments.length})
+                completed ({completedAppointments.length})
               </Button>
               <Button
                 variant={appointmentFilter === "rejected" ? "default" : "outline"}
