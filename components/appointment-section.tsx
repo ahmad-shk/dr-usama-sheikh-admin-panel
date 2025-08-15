@@ -4,10 +4,10 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { updateAppointmentStatus as updateAppointmentStatusAction } from "@/store/appointmentSlice"
+import { useToast } from "@/hooks/use-toast"
 import {
   Calendar,
   CheckCircle,
@@ -17,21 +17,16 @@ import {
   Building,
   MessageSquare,
   MessageCircle,
-  DollarSign,
   ChevronDown,
+  Loader2,
 } from "lucide-react"
 
 export function AppointmentSection() {
   const dispatch = useAppDispatch()
+  const { toast } = useToast()
   const { appointments } = useAppSelector((state) => state.appointments)
   const [appointmentFilter, setAppointmentFilter] = useState<"all" | "pending" | "completed" | "rejected">("all")
-  const [showPricePopup, setShowPricePopup] = useState(false)
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null)
-  const [selectedPrice, setSelectedPrice] = useState<number | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  // Price options
-  const priceOptions = [500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000]
+  const [loadingAppointments, setLoadingAppointments] = useState<Set<string>>(new Set())
 
   const sortedAppointments = [...appointments].sort((a, b) => {
     const dateA = new Date(a.createdAt || a.date).getTime()
@@ -47,6 +42,7 @@ export function AppointmentSection() {
   const filteredAppointments = sortedAppointments.filter((appointment) => {
     if (appointmentFilter === "all") return true
     if (appointmentFilter === "pending") return appointment.status === "pending" || !appointment.status
+    if (appointmentFilter === "completed") return appointment.status === "completed"
     return appointment.status === appointmentFilter
   })
 
@@ -71,56 +67,64 @@ export function AppointmentSection() {
     window.open(whatsappUrl, "_blank")
   }
 
-  const handlecompletedAppointment = (appointmentId: string) => {
-    setSelectedAppointmentId(appointmentId)
-    setSelectedPrice(null)
-    setShowPricePopup(true)
-  }
+  const updateAppointmentStatusHandler = async (id: string, action: "confirm" | "reject" | "pending") => {
+    setLoadingAppointments((prev) => new Set(prev).add(id))
 
-  const handlePriceSelection = (price: number) => {
-    setSelectedPrice(price)
-  }
-
-  const handleSubmitPrice = async () => {
-    if (!selectedAppointmentId || !selectedPrice) return
-
-    setIsSubmitting(true)
     try {
-      await dispatch(
-        updateAppointmentStatusAction({
-          id: selectedAppointmentId,
-          status: "completed",
-          amount: selectedPrice,
-        }),
-      ).unwrap()
+      const status = action === "confirm" ? "completed" : action === "reject" ? "rejected" : "pending"
+      await dispatch(updateAppointmentStatusAction({ id, status })).unwrap()
 
-      setShowPricePopup(false)
-      setSelectedAppointmentId(null)
-      setSelectedPrice(null)
+      toast({
+        title: "Status Updated",
+        description: `Appointment ${status === "completed" ? "confirmed" : status} successfully.`,
+        variant: "default",
+      })
     } catch (error) {
       console.error("Error updating appointment status:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update appointment status. Please try again.",
+        variant: "destructive",
+      })
     } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const updateAppointmentStatusHandler = async (id: string, action: "completed" | "reject") => {
-    if (action === "completed") {
-      handlecompletedAppointment(id)
-      return
-    }
-
-    if (action === "reject") {
-      try {
-        await dispatch(updateAppointmentStatusAction({ id, status: "rejected" })).unwrap()
-      } catch (error) {
-        console.error("Error updating appointment status:", error)
-      }
+      setLoadingAppointments((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(id)
+        return newSet
+      })
     }
   }
 
   const AppointmentCard = ({ appointment }: { appointment: any }) => {
     const appointmentStatus = appointment.status || "pending"
+    const isPending = appointmentStatus === "pending" || !appointment.status
+    const isCompleted = appointmentStatus === "completed"
+    const isConfirmed = isCompleted
+    const isRejected = appointmentStatus === "rejected"
+    const isLoading = loadingAppointments.has(appointment._id || appointment.id)
+
+    const getAvailableStatusOptions = () => {
+      const allOptions = [
+        { key: "pending", label: "Pending", icon: Clock, color: "text-blue-600 hover:text-blue-700 hover:bg-blue-50" },
+        {
+          key: "confirm",
+          label: "Confirm",
+          icon: CheckCircle,
+          color: "text-green-600 hover:text-green-700 hover:bg-green-50",
+        },
+        { key: "reject", label: "Reject", icon: XCircle, color: "text-red-600 hover:text-red-700 hover:bg-red-50" },
+      ]
+
+      if (isPending) {
+        return allOptions.filter((option) => option.key !== "pending")
+      } else if (isCompleted) {
+        return allOptions.filter((option) => option.key !== "confirm")
+      } else if (isRejected) {
+        return allOptions.filter((option) => option.key !== "reject")
+      }
+
+      return allOptions
+    }
 
     return (
       <Card key={appointment._id || appointment.id} className="hover:shadow-lg transition-shadow">
@@ -140,7 +144,7 @@ export function AppointmentSection() {
         <CardContent className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2 text-gray-600">
             <Building className="h-4 w-4 flex-shrink-0" />
-            <span className="text-xs sm:text-sm font-medium truncate">{appointment.clinic}</span>
+            <span className="text-xs sm:text-sm">{appointment.clinic}</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -167,52 +171,54 @@ export function AppointmentSection() {
           )}
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 pt-2">
-            {appointmentStatus === "pending" ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 w-full sm:w-auto text-xs sm:text-sm"
-                  >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  disabled={isLoading}
+                  className={`flex items-center justify-center gap-2 w-full sm:w-auto text-xs sm:text-sm ${
+                    isPending
+                      ? "bg-blue-600 hover:bg-blue-700 text-white"
+                      : isConfirmed
+                        ? "bg-green-600 hover:bg-green-700 text-white"
+                        : "bg-red-600 hover:bg-red-700 text-white"
+                  } disabled:opacity-50`}
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                  ) : isPending ? (
                     <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                    Pending
-                    <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-40">
-                  <DropdownMenuItem
-                    onClick={() => updateAppointmentStatusHandler(appointment._id || appointment.id, "completed")}
-                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    completed
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => updateAppointmentStatusHandler(appointment._id || appointment.id, "reject")}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Reject
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button
-                variant={appointmentStatus === "completed" ? "default" : "destructive"}
-                size="sm"
-                disabled
-                className={`capitalize w-full sm:w-auto text-xs sm:text-sm ${
-                  appointmentStatus === "completed" ? "bg-green-600 text-white" : "bg-red-600 text-white"
-                }`}
-              >
-                {appointmentStatus === "completed" ? (
-                  <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                ) : (
-                  <XCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                )}
-                {appointmentStatus}
-              </Button>
-            )}
+                  ) : isConfirmed ? (
+                    <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                  ) : (
+                    <XCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                  )}
+                  {isPending ? "Pending" : isConfirmed ? "Confirmed" : "Rejected"}
+                  {!isLoading && <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-40">
+                {getAvailableStatusOptions().map((option) => {
+                  const IconComponent = option.icon
+                  return (
+                    <DropdownMenuItem
+                      key={option.key}
+                      onClick={() =>
+                        updateAppointmentStatusHandler(
+                          appointment._id || appointment.id,
+                          option.key as "confirm" | "reject" | "pending",
+                        )
+                      }
+                      className={option.color}
+                      disabled={isLoading}
+                    >
+                      <IconComponent className="h-4 w-4 mr-2" />
+                      {option.label}
+                    </DropdownMenuItem>
+                  )
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <Button
               size="sm"
@@ -231,45 +237,6 @@ export function AppointmentSection() {
 
   return (
     <div className="space-y-4 sm:space-y-6 p-2 sm:p-0">
-      <Dialog open={showPricePopup} onOpenChange={setShowPricePopup}>
-        <DialogContent className="sm:max-w-md mx-4 sm:mx-0">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <DollarSign className="h-5 w-5 text-green-600" />
-              Select Appointment Price
-            </DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-2 sm:gap-3 py-4">
-            {priceOptions.map((price) => (
-              <Button
-                key={price}
-                variant={selectedPrice === price ? "default" : "outline"}
-                onClick={() => handlePriceSelection(price)}
-                className={`h-10 sm:h-12 text-sm sm:text-lg font-semibold ${
-                  selectedPrice === price
-                    ? "bg-green-600 hover:bg-green-700 text-white"
-                    : "hover:bg-green-50 hover:border-green-300 hover:text-green-700"
-                }`}
-              >
-                Rs. {price.toLocaleString()}
-              </Button>
-            ))}
-          </div>
-          <div className="flex justify-between gap-3">
-            <Button variant="outline" onClick={() => setShowPricePopup(false)} className="text-sm">
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmitPrice}
-              disabled={!selectedPrice || isSubmitting}
-              className="bg-green-600 hover:bg-green-700 text-white text-sm"
-            >
-              {isSubmitting ? "Submitting..." : "Submit"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* Appointment Statistics */}
       <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
         <Card>
@@ -277,7 +244,7 @@ export function AppointmentSection() {
             <div className="flex items-center gap-2 sm:gap-3">
               <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 flex-shrink-0" />
               <div>
-                <p className="text-xs sm:text-sm text-gray-600">completed</p>
+                <p className="text-xs sm:text-sm text-gray-600">Confirmed</p>
                 <p className="text-lg sm:text-2xl font-bold text-green-600">{completedAppointments.length}</p>
               </div>
             </div>
@@ -347,7 +314,7 @@ export function AppointmentSection() {
                 }`}
               >
                 <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-                completed ({completedAppointments.length})
+                Confirmed ({completedAppointments.length})
               </Button>
               <Button
                 variant={appointmentFilter === "rejected" ? "default" : "outline"}

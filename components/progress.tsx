@@ -8,13 +8,13 @@ export function Progress() {
   const { appointments } = useAppSelector((state) => state.appointments)
 
   // Calculate statistics
-  const confirmedAppointments = appointments.filter((apt) => apt.status === "completed")
+  const completedAppointments = appointments.filter((apt) => apt.status === "completed")
   const rejectedAppointments = appointments.filter((apt) => apt.status === "rejected")
   const pendingAppointments = appointments.filter((apt) => apt.status === "pending")
-  const totalEarnings = confirmedAppointments.reduce((sum, apt) => sum + (apt.amount || 0), 0)
+  const totalEarnings = completedAppointments.reduce((sum, apt) => sum + (apt.amount || 0), 0)
   const totalLosses = rejectedAppointments.reduce((sum, apt) => sum + (apt.amount || 0), 0)
   const totalAppointments = appointments.length
-  const successRate = totalAppointments > 0 ? ((confirmedAppointments.length / totalAppointments) * 100).toFixed(1) : 0
+  const successRate = totalAppointments > 0 ? ((completedAppointments.length / totalAppointments) * 100).toFixed(1) : 0
 
   const formatCurrency = (amount: number | undefined) => `Rs. ${(amount || 0).toLocaleString()}`
 
@@ -115,17 +115,17 @@ export function Progress() {
           </CardContent>
         </Card>
 
-        {/* Success/Confirmed Details */}
+        {/* Success/Completed Details */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-600" />
-              Success Details ({confirmedAppointments.length})
+              Success Details ({completedAppointments.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 max-h-64 overflow-y-auto">
-              {confirmedAppointments.map((appointment) => (
+              {completedAppointments.map((appointment) => (
                 <div
                   key={appointment._id || appointment.id}
                   className="p-3 bg-green-50 rounded-lg border-l-4 border-green-400"
@@ -142,7 +142,7 @@ export function Progress() {
                   </div>
                 </div>
               ))}
-              {confirmedAppointments.length === 0 && (
+              {completedAppointments.length === 0 && (
                 <p className="text-gray-500 text-center py-4">No confirmed appointments</p>
               )}
             </div>
@@ -216,7 +216,7 @@ export function Progress() {
             <div className="space-y-4">
               <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg">
                 <span className="font-medium text-green-800">Confirmed</span>
-                <span className="text-lg font-bold text-green-600">{confirmedAppointments.length}</span>
+                <span className="text-lg font-bold text-green-600">{completedAppointments.length}</span>
               </div>
               <div className="flex justify-between items-center p-4 bg-red-50 rounded-lg">
                 <span className="font-medium text-red-800">Rejected</span>

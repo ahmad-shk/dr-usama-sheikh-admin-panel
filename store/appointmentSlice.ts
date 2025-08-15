@@ -32,15 +32,25 @@ const initialState: AppointmentState = {
 }
 
 export const fetchAppointments = createAsyncThunk("appointments/fetchAppointments", async () => {
-  const response = await appointmentAPI.getAppointments()
-  return response
+  try {
+    const response = await appointmentAPI.getAppointments()
+    return response
+  } catch (error) {
+    throw error
+  }
 })
+
+export const fetchAppointmentsAction = fetchAppointments
 
 export const updateAppointmentStatus = createAsyncThunk(
   "appointments/updateAppointmentStatus",
   async ({ id, status, amount }: { id: string; status: string; amount?: number }) => {
-    const response = await appointmentAPI.updateAppointmentStatus(id, status, amount)
-    return { id, status, amount, ...response }
+    try {
+      const response = await appointmentAPI.updateAppointmentStatus(id, status, amount)
+      return { id, status, amount, ...response }
+    } catch (error) {
+      throw error
+    }
   },
 )
 
@@ -64,7 +74,7 @@ const appointmentSlice = createSlice({
       })
       .addCase(fetchAppointments.fulfilled, (state, action) => {
         state.loading = false
-        state.appointments = action.payload
+        state.appointments = action.payload || []
         state.lastFetch = Date.now()
       })
       .addCase(fetchAppointments.rejected, (state, action) => {
@@ -78,7 +88,6 @@ const appointmentSlice = createSlice({
         if (appointment) {
           appointment.status = status as "pending" | "completed" | "rejected"
           if (amount !== undefined) {
-            appointment.amount = amount
             appointment.amount = amount
           }
         }

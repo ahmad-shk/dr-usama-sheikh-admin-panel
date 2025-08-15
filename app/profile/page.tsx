@@ -8,9 +8,10 @@ import { Header } from "@/components/header"
 import { ChangePassword } from "@/components/change-password"
 import { Progress } from "@/components/progress"
 import { AppointmentSection } from "@/components/appointment-section"
+import CreateAppointment from "@/components/create-appointment"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { fetchAppointments, clearError } from "@/store/appointmentSlice"
-import { User, Settings, TrendingUp, Calendar, Loader2 } from "lucide-react"
+import { fetchAppointmentsAction, clearError } from "@/store/appointmentSlice"
+import { User, Settings, TrendingUp, Calendar, Loader2, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export default function ProfilePage() {
@@ -19,10 +20,10 @@ export default function ProfilePage() {
   const { appointments, loading, error } = useAppSelector((state) => state.appointments)
 
   useEffect(() => {
-    dispatch(fetchAppointments())
+    dispatch(fetchAppointmentsAction())
 
     const refreshInterval = setInterval(() => {
-      dispatch(fetchAppointments())
+      dispatch(fetchAppointmentsAction())
     }, 5000) // Refresh every 5 seconds
 
     // Cleanup interval on component unmount
@@ -31,7 +32,7 @@ export default function ProfilePage() {
 
   const handleRetry = () => {
     dispatch(clearError())
-    dispatch(fetchAppointments())
+    dispatch(fetchAppointmentsAction())
   }
 
   if (loading && appointments.length === 0) {
@@ -79,15 +80,14 @@ export default function ProfilePage() {
             </div>
             <div className="min-w-0 flex-1">
               <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">Admin Profile</h1>
-              <p className="text-sm sm:text-base text-gray-600 truncate">{user?.email}</p>
+              <p className="text-sm sm:text-base text-gray-600 truncate">{user?.username}</p>
               <p className="text-xs sm:text-sm text-gray-500">Manage your clinic and appointments</p>
             </div>
           </div>
         </div>
 
-        {/* Tabs */}
         <Tabs defaultValue="progress" className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-3 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-4 h-auto p-1">
             <TabsTrigger
               value="change-password"
               className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 sm:py-3 text-xs sm:text-sm"
@@ -111,6 +111,14 @@ export default function ProfilePage() {
               <span className="hidden sm:inline">Appointment Section</span>
               <span className="sm:hidden">Appointments</span>
             </TabsTrigger>
+            <TabsTrigger
+              value="create-appointment"
+              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 sm:py-3 text-xs sm:text-sm"
+            >
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Create Appointment</span>
+              <span className="sm:hidden">Create</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="change-password">
@@ -123,6 +131,10 @@ export default function ProfilePage() {
 
           <TabsContent value="appointments">
             <AppointmentSection />
+          </TabsContent>
+
+          <TabsContent value="create-appointment">
+            <CreateAppointment />
           </TabsContent>
         </Tabs>
       </div>

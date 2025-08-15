@@ -13,7 +13,7 @@ export interface Appointment {
   message: string
   createdAt: string
   updatedAt: string
-  status: "pending" | "confirmed" | "rejected"
+  status: "pending" | "completed" | "rejected"
   amount: number
 }
 
@@ -45,7 +45,7 @@ export const appointmentAPI = {
   // Update appointment status with optional amount
   async updateAppointmentStatus(
     id: string,
-    status: "pending" | "confirmed" | "rejected",
+    status: "pending" | "completed" | "rejected",
     amount?: number,
   ): Promise<Appointment> {
     try {
@@ -73,6 +73,39 @@ export const appointmentAPI = {
       throw error
     }
   },
+
+  async createAppointment(appointmentData: {
+    clinic: string
+    service: string
+    date: string
+    time: string
+    name: string
+    phone: string
+    message: string
+  }): Promise<Appointment> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/appointmentRoutes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...appointmentData,
+          status: "pending", // Default status for new appointments
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      return data
+    } catch (error) {
+      console.error("Error creating appointment:", error)
+      throw error
+    }
+  },
 }
 
 // Export convenience function for fetching appointments
@@ -80,3 +113,5 @@ export const fetchAppointments = appointmentAPI.getAppointments
 
 // Export convenience function for updating appointment status
 export const updateAppointmentStatus = appointmentAPI.updateAppointmentStatus
+
+export const createAppointment = appointmentAPI.createAppointment
