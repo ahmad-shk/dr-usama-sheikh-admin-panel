@@ -54,6 +54,17 @@ export const updateAppointmentStatus = createAsyncThunk(
   },
 )
 
+export const deleteAppointment = createAsyncThunk("appointments/deleteAppointment", async (id: string) => {
+  try {
+    await appointmentAPI.deleteAppointment(id)
+    return id
+  } catch (error) {
+    throw error
+  }
+})
+
+export const deleteAppointmentAction = deleteAppointment
+
 const appointmentSlice = createSlice({
   name: "appointments",
   initialState,
@@ -91,6 +102,13 @@ const appointmentSlice = createSlice({
             appointment.amount = amount
           }
         }
+      })
+      .addCase(deleteAppointment.fulfilled, (state, action) => {
+        const deletedId = action.payload
+        state.appointments = state.appointments.filter((apt) => apt._id !== deletedId && apt.id !== deletedId)
+      })
+      .addCase(deleteAppointment.rejected, (state, action) => {
+        state.error = action.error.message || "Failed to delete appointment"
       })
   },
 })

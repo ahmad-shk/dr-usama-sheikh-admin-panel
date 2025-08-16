@@ -9,33 +9,28 @@ import { ChangePassword } from "@/components/change-password"
 import { Progress } from "@/components/progress"
 import { AppointmentSection } from "@/components/appointment-section"
 import CreateAppointment from "@/components/create-appointment"
+import PatientQueries from "@/components/patient-queries"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { fetchAppointmentsAction, clearError } from "@/store/appointmentSlice"
-import { User, Settings, TrendingUp, Calendar, Loader2, Plus } from "lucide-react"
+import { fetchQueriesAction } from "@/store/querySlice"
+import { User, Settings, TrendingUp, Calendar, Loader2, Plus, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export default function ProfilePage() {
   const { user } = useAuth()
   const dispatch = useAppDispatch()
   const { appointments, loading, error } = useAppSelector((state) => state.appointments)
+  const { queries } = useAppSelector((state) => state.queries)
+
+  const pendingAppointments = appointments.filter((apt) => apt.status === "pending" || !apt.status)
+  const pendingQueries = queries.filter((query) => query.status === "pending")
 
   useEffect(() => {
     dispatch(fetchAppointmentsAction())
-
-    const refreshInterval = setInterval(() => {
-      dispatch(fetchAppointmentsAction())
-    }, 5000) // Refresh every 5 seconds
-
-    // Cleanup interval on component unmount
-    return () => clearInterval(refreshInterval)
+    dispatch(fetchQueriesAction())
   }, [dispatch])
 
-  const handleRetry = () => {
-    dispatch(clearError())
-    dispatch(fetchAppointmentsAction())
-  }
-
-  if (loading && appointments.length === 0) {
+  if (loading && appointments.length === 0 && queries.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
@@ -43,7 +38,7 @@ export default function ProfilePage() {
           <div className="flex items-center justify-center h-32 sm:h-64">
             <div className="flex items-center gap-2">
               <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin" />
-              <span className="text-sm sm:text-base">Loading appointments...</span>
+              <span className="text-sm sm:text-base">Loading appointments and queries...</span>
             </div>
           </div>
         </div>
@@ -63,7 +58,11 @@ export default function ProfilePage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleRetry}
+                onClick={() => {
+                  dispatch(clearError())
+                  dispatch(fetchAppointmentsAction())
+                  dispatch(fetchQueriesAction())
+                }}
                 className="ml-2 bg-transparent text-xs sm:text-sm"
               >
                 Retry
@@ -87,7 +86,7 @@ export default function ProfilePage() {
         </div>
 
         <Tabs defaultValue="progress" className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-4 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-5 h-auto p-1">
             <TabsTrigger
               value="change-password"
               className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 sm:py-3 text-xs sm:text-sm"
@@ -110,6 +109,24 @@ export default function ProfilePage() {
               <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Appointment Section</span>
               <span className="sm:hidden">Appointments</span>
+              {pendingAppointments.length > 0 && (
+                <span className="bg-blue-600 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[1.25rem] h-5 flex items-center justify-center">
+                  {pendingAppointments.length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger
+              value="patient-queries"
+              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 sm:py-3 text-xs sm:text-sm"
+            >
+              <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Patient Queries</span>
+              <span className="sm:hidden">Queries</span>
+              {pendingQueries.length > 0 && (
+                <span className="bg-orange-600 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[1.25rem] h-5 flex items-center justify-center">
+                  {pendingQueries.length}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger
               value="create-appointment"
@@ -131,6 +148,10 @@ export default function ProfilePage() {
 
           <TabsContent value="appointments">
             <AppointmentSection />
+          </TabsContent>
+
+          <TabsContent value="patient-queries">
+            <PatientQueries />
           </TabsContent>
 
           <TabsContent value="create-appointment">

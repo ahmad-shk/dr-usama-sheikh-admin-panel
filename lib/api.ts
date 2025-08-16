@@ -106,6 +106,24 @@ export const appointmentAPI = {
       throw error
     }
   },
+
+  async deleteAppointment(id: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/appointmentRoutes/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+    } catch (error) {
+      console.error("Error deleting appointment:", error)
+      throw error
+    }
+  },
 }
 
 // Export convenience function for fetching appointments
@@ -115,3 +133,82 @@ export const fetchAppointments = appointmentAPI.getAppointments
 export const updateAppointmentStatus = appointmentAPI.updateAppointmentStatus
 
 export const createAppointment = appointmentAPI.createAppointment
+
+export const deleteAppointment = appointmentAPI.deleteAppointment
+
+export interface Query {
+  _id: string
+  name: string
+  phone: string
+  department: string
+  message: string
+  status: "pending" | "answered" | "closed"
+  createdAt: string
+  updatedAt: string
+}
+
+export const queryAPI = {
+  // Fetch all queries
+  async getQueries(): Promise<Query[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/queries`)
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      return data
+    } catch (error) {
+      console.error("Error fetching queries:", error)
+      throw error
+    }
+  },
+
+  // Update query status
+  async updateQueryStatus(id: string, status: "pending" | "answered" | "closed"): Promise<Query> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/queries/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      return data
+    } catch (error) {
+      console.error("Error updating query status:", error)
+      throw error
+    }
+  },
+
+  // Delete query
+  async deleteQuery(id: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/queries/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+    } catch (error) {
+      console.error("Error deleting query:", error)
+      throw error
+    }
+  },
+}
+
+// Export convenience functions for queries
+export const fetchQueries = queryAPI.getQueries
+export const updateQueryStatus = queryAPI.updateQueryStatus
+export const deleteQuery = queryAPI.deleteQuery

@@ -71,6 +71,44 @@ export default function CreateAppointment() {
     }))
   }
 
+  const sendConfirmationMessage = (appointmentData: any) => {
+    const formatPhoneNumber = (phone: string) => {
+      // Remove any existing country code or special characters
+      let cleanPhone = phone.replace(/[^\d]/g, "")
+
+      // If phone starts with 0, replace with 92
+      if (cleanPhone.startsWith("0")) {
+        cleanPhone = "92" + cleanPhone.substring(1)
+      }
+      // If phone doesn't start with 92, add it
+      else if (!cleanPhone.startsWith("92")) {
+        cleanPhone = "92" + cleanPhone
+      }
+
+      return cleanPhone
+    }
+
+    const message = `Hello ${appointmentData.name}! Your appointment is confirmed:
+
+📅 Date: ${appointmentData.date}
+⏰ Time: ${appointmentData.time}
+🏥 Service: ${appointmentData.service}
+📍 Clinic: ${appointmentData.clinic}${
+      appointmentData.amount
+        ? `
+💰 Amount: Rs. ${appointmentData.amount.toLocaleString()}`
+        : ""
+    }
+
+Please arrive 15 minutes early. Thank you!`
+
+    const encodedMessage = encodeURIComponent(message)
+    const formattedPhone = formatPhoneNumber(appointmentData.phone)
+    const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodedMessage}`
+
+    window.open(whatsappUrl, "_blank")
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -83,6 +121,8 @@ export default function CreateAppointment() {
       await createAppointment(appointmentData)
 
       dispatch(fetchAppointmentsAction())
+
+      sendConfirmationMessage(appointmentData)
 
       setFormData({
         clinic: "Smile Dental Clinic",
@@ -97,7 +137,7 @@ export default function CreateAppointment() {
 
       toast({
         title: "Success!",
-        description: "Appointment created successfully.",
+        description: "Appointment created successfully. Confirmation message sent to patient.",
         variant: "default",
       })
     } catch (error) {

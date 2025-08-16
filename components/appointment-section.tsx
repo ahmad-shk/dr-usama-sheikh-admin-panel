@@ -5,8 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { updateAppointmentStatus as updateAppointmentStatusAction } from "@/store/appointmentSlice"
+import {
+  updateAppointmentStatus as updateAppointmentStatusAction,
+  deleteAppointmentAction,
+} from "@/store/appointmentSlice"
 import { useToast } from "@/hooks/use-toast"
 import {
   Calendar,
@@ -19,6 +30,7 @@ import {
   MessageCircle,
   ChevronDown,
   Loader2,
+  Trash2,
 } from "lucide-react"
 
 export function AppointmentSection() {
@@ -27,6 +39,9 @@ export function AppointmentSection() {
   const { appointments } = useAppSelector((state) => state.appointments)
   const [appointmentFilter, setAppointmentFilter] = useState<"all" | "pending" | "completed" | "rejected">("all")
   const [loadingAppointments, setLoadingAppointments] = useState<Set<string>>(new Set())
+  const [deletingAppointments, setDeletingAppointments] = useState<Set<string>>(new Set())
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [appointmentToDelete, setAppointmentToDelete] = useState<string | null>(null)
 
   const sortedAppointments = [...appointments].sort((a, b) => {
     const dateA = new Date(a.createdAt || a.date).getTime()
@@ -95,6 +110,41 @@ export function AppointmentSection() {
     }
   }
 
+  const deleteAppointmentHandler = async (id: string) => {
+    setAppointmentToDelete(id)
+    setDeleteConfirmOpen(true)
+  }
+
+  const confirmDeleteAppointment = async () => {
+    if (!appointmentToDelete) return
+
+    setDeletingAppointments((prev) => new Set(prev).add(appointmentToDelete))
+    setDeleteConfirmOpen(false)
+
+    try {
+      await dispatch(deleteAppointmentAction(appointmentToDelete)).unwrap()
+      toast({
+        title: "Appointment Deleted",
+        description: "Appointment has been successfully deleted.",
+        variant: "default",
+      })
+    } catch (error) {
+      console.error("Error deleting appointment:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete appointment. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setDeletingAppointments((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(appointmentToDelete)
+        return newSet
+      })
+      setAppointmentToDelete(null)
+    }
+  }
+
   const AppointmentCard = ({ appointment }: { appointment: any }) => {
     const appointmentStatus = appointment.status || "pending"
     const isPending = appointmentStatus === "pending" || !appointment.status
@@ -102,6 +152,7 @@ export function AppointmentSection() {
     const isConfirmed = isCompleted
     const isRejected = appointmentStatus === "rejected"
     const isLoading = loadingAppointments.has(appointment._id || appointment.id)
+    const isDeleting = deletingAppointments.has(appointment._id || appointment.id)
 
     const getAvailableStatusOptions = () => {
       const allOptions = [
@@ -175,7 +226,7 @@ export function AppointmentSection() {
               <DropdownMenuTrigger asChild>
                 <Button
                   size="sm"
-                  disabled={isLoading}
+                  disabled={isLoading || isDeleting}
                   className={`flex items-center justify-center gap-2 w-full sm:w-auto text-xs sm:text-sm ${
                     isPending
                       ? "bg-blue-600 hover:bg-blue-700 text-white"
@@ -210,7 +261,7 @@ export function AppointmentSection() {
                         )
                       }
                       className={option.color}
-                      disabled={isLoading}
+                      disabled={isLoading || isDeleting}
                     >
                       <IconComponent className="h-4 w-4 mr-2" />
                       {option.label}
@@ -220,15 +271,29 @@ export function AppointmentSection() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => openWhatsApp(appointment.phone, appointment.name)}
-              className="flex items-center justify-center gap-2 text-green-600 border-green-200 hover:bg-green-50 w-full sm:w-auto text-xs sm:text-sm"
-            >
-              <MessageCircle className="h-4 w-4" />
-              WhatsApp
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => openWhatsApp(appointment.phone, appointment.name)}
+                disabled={isDeleting}
+                className="flex items-center justify-center gap-2 text-green-600 border-green-200 hover:bg-green-50 text-xs sm:text-sm"
+              >
+                <MessageCircle className="h-4 w-4" />
+                WhatsApp
+              </Button>
+
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => deleteAppointmentHandler(appointment._id || appointment.id)}
+                disabled={isLoading || isDeleting}
+                className="flex items-center justify-center gap-2 text-red-600 border-red-200 hover:bg-red-50 text-xs sm:text-sm"
+              >
+                {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                Delete
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -345,6 +410,35 @@ export function AppointmentSection() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-red-600" />
+              Delete Appointment
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this appointment? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteConfirmOpen(false)
+                setAppointmentToDelete(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDeleteAppointment} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -6,6 +6,7 @@ import "./globals.css"
 import { AuthProvider } from "@/contexts/auth-context"
 import { ReduxProvider } from "@/components/redux-provider"
 import { Toaster } from "@/components/ui/toaster"
+import { RouteGuard } from "@/components/route-guard"
 
 export const metadata: Metadata = {
   title: "Dental Clinic Admin",
@@ -32,7 +33,7 @@ html {
       <body>
         <ReduxProvider>
           <AuthProvider>
-            {children}
+            <RouteGuard>{children}</RouteGuard>
             <Toaster />
           </AuthProvider>
         </ReduxProvider>

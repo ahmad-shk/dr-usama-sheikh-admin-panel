@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { fetchAppointments } from "@/store/appointmentSlice"
+import { fetchQueriesAction } from "@/store/querySlice"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,20 +23,31 @@ export function Header() {
   const router = useRouter()
   const dispatch = useAppDispatch()
   const { appointments } = useAppSelector((state) => state.appointments)
+  const { queries } = useAppSelector((state) => state.queries)
   const [seenAppointments, setSeenAppointments] = useState<string[]>([])
+  const [seenQueries, setSeenQueries] = useState<string[]>([])
 
   useEffect(() => {
     const seen = localStorage.getItem("seenAppointments")
     if (seen) {
       setSeenAppointments(JSON.parse(seen))
     }
+    const seenQueriesData = localStorage.getItem("seenQueries")
+    if (seenQueriesData) {
+      setSeenQueries(JSON.parse(seenQueriesData))
+    }
   }, [])
 
   useEffect(() => {
     dispatch(fetchAppointments())
+    dispatch(fetchQueriesAction())
+  }, [dispatch])
+
+  useEffect(() => {
     const interval = setInterval(() => {
-      dispatch(fetchAppointments())
+      dispatch(fetchQueriesAction())
     }, 5000)
+
     return () => clearInterval(interval)
   }, [dispatch])
 
@@ -43,10 +55,19 @@ export function Header() {
     (apt) => apt.status === "pending" || !apt.status || apt.status === undefined || apt.status === null,
   )
 
+  const pendingQueries = queries.filter((query) => query.status === "pending" || !query.status)
+
   const unseenNotifications = pendingAppointments.filter((apt) => {
     const appointmentId = apt._id || apt.id
     return appointmentId && !seenAppointments.includes(appointmentId)
   })
+
+  const unseenQueries = pendingQueries.filter((query) => {
+    const queryId = query._id || query.id
+    return queryId && !seenQueries.includes(queryId)
+  })
+
+  const totalUnseenCount = unseenNotifications.length + unseenQueries.length
 
   const markAsSeen = (appointmentId: string) => {
     const updatedSeen = [...seenAppointments, appointmentId]
@@ -54,11 +75,22 @@ export function Header() {
     localStorage.setItem("seenAppointments", JSON.stringify(updatedSeen))
   }
 
+  const markQueryAsSeen = (queryId: string) => {
+    const updatedSeen = [...seenQueries, queryId]
+    setSeenQueries(updatedSeen)
+    localStorage.setItem("seenQueries", JSON.stringify(updatedSeen))
+  }
+
   const markAllAsSeen = () => {
     const allIds = pendingAppointments.map((apt) => apt._id || apt.id).filter(Boolean)
     const updatedSeen = [...new Set([...seenAppointments, ...allIds])]
     setSeenAppointments(updatedSeen)
     localStorage.setItem("seenAppointments", JSON.stringify(updatedSeen))
+
+    const allQueryIds = pendingQueries.map((query) => query._id || query.id).filter(Boolean)
+    const updatedSeenQueries = [...new Set([...seenQueries, ...allQueryIds])]
+    setSeenQueries(updatedSeenQueries)
+    localStorage.setItem("seenQueries", JSON.stringify(updatedSeenQueries))
   }
 
   const handleLogout = () => {
@@ -124,43 +156,76 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="relative p-2">
                     <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-                    {unseenNotifications.length > 0 && (
+                    {totalUnseenCount > 0 && (
                       <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center text-[10px] sm:text-xs">
-                        {unseenNotifications.length}
+                        {totalUnseenCount}
                       </span>
                     )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-72 sm:w-80" align="end">
-                  <DropdownMenuLabel className="text-sm">
-                    New Appointments ({unseenNotifications.length})
-                  </DropdownMenuLabel>
+                  <DropdownMenuLabel className="text-sm">Notifications ({totalUnseenCount})</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {unseenNotifications.length > 0 ? (
-                    unseenNotifications.map((notification) => {
-                      const appointmentId = notification._id || notification.id
-                      return (
-                        <DropdownMenuItem
-                          key={appointmentId}
-                          className="cursor-pointer p-2 sm:p-3"
-                          onClick={() => appointmentId && markAsSeen(appointmentId)}
-                        >
-                          <div className="flex flex-col gap-1 w-full">
-                            <div className="flex justify-between items-start">
-                              <p className="font-medium text-xs sm:text-sm truncate pr-2">{notification.name}</p>
-                              <span className="text-xs text-gray-500 flex-shrink-0">
-                                {getRelativeTime(notification.createdAt)}
-                              </span>
+                  {unseenNotifications.length > 0 && (
+                    <>
+                      <DropdownMenuLabel className="text-xs text-gray-500 px-2">
+                        New Appointments ({unseenNotifications.length})
+                      </DropdownMenuLabel>
+                      {unseenNotifications.map((notification) => {
+                        const appointmentId = notification._id || notification.id
+                        return (
+                          <DropdownMenuItem
+                            key={appointmentId}
+                            className="cursor-pointer p-2 sm:p-3"
+                            onClick={() => appointmentId && markAsSeen(appointmentId)}
+                          >
+                            <div className="flex flex-col gap-1 w-full">
+                              <div className="flex justify-between items-start">
+                                <p className="font-medium text-xs sm:text-sm truncate pr-2">{notification.name}</p>
+                                <span className="text-xs text-gray-500 flex-shrink-0">
+                                  {getRelativeTime(notification.createdAt)}
+                                </span>
+                              </div>
+                              <p className="text-xs sm:text-sm text-gray-600 truncate">{notification.service}</p>
+                              <p className="text-xs text-gray-500">{notification.phone}</p>
                             </div>
-                            <p className="text-xs sm:text-sm text-gray-600 truncate">{notification.service}</p>
-                            <p className="text-xs text-gray-500">{notification.phone}</p>
-                          </div>
-                        </DropdownMenuItem>
-                      )
-                    })
-                  ) : (
+                          </DropdownMenuItem>
+                        )
+                      })}
+                      {unseenQueries.length > 0 && <DropdownMenuSeparator />}
+                    </>
+                  )}
+                  {unseenQueries.length > 0 && (
+                    <>
+                      <DropdownMenuLabel className="text-xs text-gray-500 px-2">
+                        New Queries ({unseenQueries.length})
+                      </DropdownMenuLabel>
+                      {unseenQueries.map((query) => {
+                        const queryId = query._id || query.id
+                        return (
+                          <DropdownMenuItem
+                            key={queryId}
+                            className="cursor-pointer p-2 sm:p-3"
+                            onClick={() => queryId && markQueryAsSeen(queryId)}
+                          >
+                            <div className="flex flex-col gap-1 w-full">
+                              <div className="flex justify-between items-start">
+                                <p className="font-medium text-xs sm:text-sm truncate pr-2">{query.name}</p>
+                                <span className="text-xs text-gray-500 flex-shrink-0">
+                                  {getRelativeTime(query.createdAt)}
+                                </span>
+                              </div>
+                              <p className="text-xs sm:text-sm text-gray-600 truncate">{query.department}</p>
+                              <p className="text-xs text-gray-500">{query.phone}</p>
+                            </div>
+                          </DropdownMenuItem>
+                        )
+                      })}
+                    </>
+                  )}
+                  {totalUnseenCount === 0 && (
                     <DropdownMenuItem className="text-center text-gray-500 p-2 sm:p-3 text-sm">
-                      No new appointments
+                      No new notifications
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
@@ -171,7 +236,7 @@ export function Header() {
                       router.push("/profile")
                     }}
                   >
-                    View All Appointments
+                    View All Notifications
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
