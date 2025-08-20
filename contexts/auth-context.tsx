@@ -40,26 +40,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = localStorage.getItem("dental_admin_token")
     const savedUser = localStorage.getItem("dental_admin_user")
 
-    if (token === HARDCODED_TOKEN && savedUser) {
+    if (token && savedUser) {
       setUser(JSON.parse(savedUser))
     }
     setIsLoading(false)
   }, [])
 
+  // Optionally, you can update this login to support backend login if needed
   const login = async (username: string, password: string): Promise<boolean> => {
     setIsLoading(true)
-
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
-      setUser(ADMIN_CREDENTIALS.user)
-      localStorage.setItem("dental_admin_token", HARDCODED_TOKEN)
-      localStorage.setItem("dental_admin_user", JSON.stringify(ADMIN_CREDENTIALS.user))
-      setIsLoading(false)
-      return true
-    }
-
+    // This is a placeholder for legacy login, not used with backend
     setIsLoading(false)
     return false
   }

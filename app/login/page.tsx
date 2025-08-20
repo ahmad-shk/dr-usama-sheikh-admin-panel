@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
+import axios from "axios"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,31 +11,46 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Eye, EyeOff, Lock, User, Stethoscope } from "lucide-react"
+import { Eye, EyeOff, Lock, User, Stethoscope, Tooth } from "lucide-react"
 import Link from "next/link"
 
+
 export default function LoginPage() {
-  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
-  const { login, isLoading } = useAuth()
+  const [loading, setLoading] = useState(false)
+  const { login } = useAuth()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
 
-    if (!username || !password) {
+    if (!email || !password) {
       setError("Please fill in all fields")
       return
     }
 
-    const success = await login(username, password)
-    if (success) {
-      router.push("/profile")
-    } else {
-      setError("Invalid username or password")
+    setLoading(true)
+    try {
+      const res = await axios.post("https://dr-usama-sheikh-backend.vercel.app/api/admin/login", {
+        email,
+        password,
+      })
+      if (res.data && res.data.token) {
+        console.log("succes")
+        localStorage.setItem("dental_admin_token", res.data.token)
+        localStorage.setItem("dental_admin_user", JSON.stringify(res.data.admin))
+        router.push("/profile")
+      } else {
+        setError("Invalid response from server")
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Invalid email or password")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -44,12 +60,14 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className="bg-blue-600 p-3 rounded-full">
-              <Stethoscope className="h-8 w-8 text-white" />
+            <div className="bg-gradient-to-tr from-blue-600 to-cyan-400 p-3 rounded-full shadow-lg border-4 border-white flex items-center justify-center">
+              <Tooth className="h-10 w-10 text-white drop-shadow-lg" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Login</h1>
-          <p className="text-gray-600">Sign in to manage dental appointments</p>
+          <h1 className="text-3xl font-extrabold text-blue-800 mb-1 tracking-tight flex items-center justify-center gap-2">
+            Al Sheikh Clinic <span className="hidden sm:inline">Admin Panel</span>
+          </h1>
+          <p className="text-gray-600 text-base sm:text-lg font-medium">Sign in to manage dental appointments</p>
         </div>
 
         {/* Login Form */}
@@ -60,17 +78,17 @@ export default function LoginPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="email">Email</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
-                    id="username"
-                    type="text"
-                    placeholder="Admin"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    id="email"
+                    type="email"
+                    placeholder="ahmadsaleem19950@gmail.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
-                    disabled={isLoading}
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -87,13 +105,13 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10"
-                    disabled={isLoading}
+                    disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                    disabled={isLoading}
+                    disabled={loading}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -108,8 +126,8 @@ export default function LoginPage() {
               )}
 
               {/* Login Button */}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? (
                   <div className="flex items-center gap-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     Signing in...
@@ -126,16 +144,6 @@ export default function LoginPage() {
                 </Link>
               </div>
             </form>
-          </CardContent>
-        </Card>
-
-        <Card className="mt-4 bg-blue-50 border-blue-200">
-          <CardContent className="pt-4">
-            <div className="text-center text-sm text-blue-800">
-              <p className="font-medium mb-1">Demo Credentials:</p>
-              <p>Username: Admin</p>
-              <p>Password: Admin123</p>
-            </div>
           </CardContent>
         </Card>
       </div>

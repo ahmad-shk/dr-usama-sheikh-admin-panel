@@ -20,7 +20,7 @@ export function ChangePassword() {
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [passwordChangeMessage, setPasswordChangeMessage] = useState("")
-  const [newEmail, setNewEmail] = useState(user?.email || "")
+  const [newEmail, setNewEmail] = useState(user?.username || "")
   const [newName, setNewName] = useState(user?.name || "")
 
   const handlePasswordChange = (e: React.FormEvent) => {

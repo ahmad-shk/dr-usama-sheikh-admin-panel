@@ -137,8 +137,8 @@ export function Header() {
               <Stethoscope className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-base sm:text-xl font-bold text-gray-900">Dental Clinic Admin</h1>
-              <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Appointment Management System</p>
+              <h1 className="text-base sm:text-xl font-extrabold tracking-tight">Al Sheikh Clinic</h1>
+              <p className="text-xs sm:text-sm text-blue-600 hidden sm:block font-medium">Appointment System Admin Panel</p>
             </div>
           </div>
 

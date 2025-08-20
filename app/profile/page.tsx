@@ -10,6 +10,7 @@ import { Progress } from "@/components/progress"
 import { AppointmentSection } from "@/components/appointment-section"
 import CreateAppointment from "@/components/create-appointment"
 import PatientQueries from "@/components/patient-queries"
+import ChatQueries from "@/components/chat-queries"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { fetchAppointmentsAction, clearError } from "@/store/appointmentSlice"
 import { fetchQueriesAction } from "@/store/querySlice"
@@ -50,7 +51,7 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+  <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-8">
         {error && (
           <Alert className="mb-4 sm:mb-6 border-red-200 bg-red-50">
             <AlertDescription className="text-red-800 text-sm">
@@ -72,10 +73,10 @@ export default function ProfilePage() {
         )}
 
         {/* Profile Header */}
-        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-4 sm:mb-8">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-              <User className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+        <div className="bg-white rounded-lg shadow-sm p-3 sm:p-6 mb-4 sm:mb-8">
+          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 text-center sm:text-left">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mb-2 sm:mb-0">
+              <User className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
             </div>
             <div className="min-w-0 flex-1">
               <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">Admin Profile</h1>
@@ -85,8 +86,8 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <Tabs defaultValue="progress" className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-5 h-auto p-1">
+        <Tabs defaultValue="progress" className="space-y-3 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-6 h-auto p-1 gap-1">
             <TabsTrigger
               value="change-password"
               className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 sm:py-3 text-xs sm:text-sm"
@@ -129,6 +130,14 @@ export default function ProfilePage() {
               )}
             </TabsTrigger>
             <TabsTrigger
+              value="chat-queries"
+              className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 sm:py-3 text-xs sm:text-sm"
+            >
+              <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Chat Queries</span>
+              <span className="sm:hidden">Chats</span>
+            </TabsTrigger>
+            <TabsTrigger
               value="create-appointment"
               className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 sm:py-3 text-xs sm:text-sm"
             >
@@ -154,6 +163,9 @@ export default function ProfilePage() {
             <PatientQueries />
           </TabsContent>
 
+          <TabsContent value="chat-queries">
+            <ChatQueries />
+          </TabsContent>
           <TabsContent value="create-appointment">
             <CreateAppointment />
           </TabsContent>

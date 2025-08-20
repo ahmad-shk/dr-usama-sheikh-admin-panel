@@ -9,8 +9,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { RouteGuard } from "@/components/route-guard"
 
 export const metadata: Metadata = {
-  title: "Dental Clinic Admin",
-  description: "Dental Clinic Appointment Management System",
+  title: "Al Sheikh Clinic Admin Panel",
+  description: "Al Sheikh Clinic Dental & Medical Appointment System",
   generator: "v0.dev",
 }
 
@@ -22,6 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <link rel="icon" href="/file.svg" type="image/svg+xml" />
         <style>{`
 html {
   font-family: ${GeistSans.style.fontFamily};
