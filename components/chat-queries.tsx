@@ -4,6 +4,9 @@ import { useEffect, useState, useRef } from "react"
 import axios from "axios"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { ChevronDown } from "lucide-react"
+import { chatAPI } from "@/lib/chatApi"
 import { FaWhatsapp } from "react-icons/fa"
 import { Loader2 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -16,44 +19,53 @@ interface ChatQuery {
   status?: string
 }
 
-export default function ChatQueries() {
-  const [chats, setChats] = useState<ChatQuery[]>([])
-  const [error, setError] = useState("")
-  const pendingCount = chats.filter((c) => c.status === "pending").length
-  // Sort chats so latest are first
-  const sortedChats = [...chats].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+interface ChatQueriesProps {
+  chats?: ChatQuery[]
+  loading?: boolean
+  error?: string
+}
 
-  useEffect(() => {
-    let isMounted = true
-    const fetchChats = async () => {
-      if (!isMounted) return
-      setError("")
-      try {
-        const res = await axios.get("https://dr-usama-sheikh-backend.vercel.app/api/chats")
-        if (isMounted) setChats(res.data)
-      } catch (err: any) {
-        if (isMounted) setError(err.message || "Error fetching chat queries")
-      } finally {
-        // No loading state
-      }
+const ChatQueries: React.FC<ChatQueriesProps> = ({ chats = [], loading = false, error = "" }) => {
+  const [localChats, setLocalChats] = useState<ChatQuery[]>(chats)
+  const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({})
+  useEffect(() => { setLocalChats(chats) }, [chats])
+  const pendingCount = localChats.filter((c) => c.status === "pending").length
+  const sortedChats = [...localChats].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+  const getStatusOptions = (currentStatus: string | undefined) => {
+    const allStatuses: Array<"pending" | "completed"> = ["pending", "completed"];
+    return allStatuses.filter((status) => status !== currentStatus);
+  }
+
+  const handleStatusChange = async (chatId: string, newStatus: "pending" | "completed") => {
+    setLoadingStates((prev) => ({ ...prev, [chatId]: true }))
+    try {
+      // Map 'completed' to 'closed' for backend
+      const backendStatus = newStatus === "completed" ? "closed" : newStatus;
+      const updated = await chatAPI.updateChatStatus(chatId, backendStatus)
+      // Map 'closed' back to 'completed' for UI
+      setLocalChats((prev) => prev.map((c) => c._id === chatId ? { ...c, status: updated.status === "closed" ? "completed" : updated.status } : c))
+    } catch (err) {
+      // Optionally show error toast
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, [chatId]: false }))
     }
-  fetchChats()
-  intervalRef.current = setInterval(fetchChats, 5000)
-    return () => {
-      isMounted = false
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-  }, [])
-
-
+  }
 
   if (error) {
     return (
       <Alert className="mb-4 border-red-200 bg-red-50">
         <AlertDescription className="text-red-800 text-sm">{error}</AlertDescription>
       </Alert>
+    )
+  }
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+        <span className="ml-2 text-gray-600">Loading chat queries...</span>
+      </div>
     )
   }
 
@@ -89,13 +101,37 @@ export default function ChatQueries() {
                   <td className="px-4 py-3 whitespace-nowrap text-gray-700">{chat.phone}</td>
                   <td className="px-4 py-3 whitespace-nowrap text-gray-600">{new Date(chat.createdAt).toLocaleString()}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    {chat.status ? (
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${chat.status === "pending" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
-                        {chat.status.charAt(0).toUpperCase() + chat.status.slice(1)}
-                      </span>
-                    ) : (
-                      <span className="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">N/A</span>
-                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="flex items-center gap-2 min-w-[6rem]">
+                          {loadingStates[chat._id] ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                          ) : chat.status === "pending" || chat.status === "completed" ? (
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold
+                              ${chat.status === "pending" ? "bg-red-100 text-red-700" : ""}
+                              ${chat.status === "completed" ? "bg-green-100 text-green-700" : ""}
+                            `}>
+                              {chat.status === "pending" && "Pending"}
+                              {chat.status === "completed" && "Completed"}
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">N/A</span>
+                          )}
+                          <ChevronDown className="h-4 w-4 ml-1" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {getStatusOptions(chat.status).map((status) => (
+                          <DropdownMenuItem
+                            key={status}
+                            onClick={() => handleStatusChange(chat._id, status as any)}
+                            className="capitalize"
+                          >
+                            {status.replace("-", " ")}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap align-middle">
                     <div className="flex justify-end">
@@ -126,13 +162,41 @@ export default function ChatQueries() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-700">{chat.phone}</span>
-                {chat.status ? (
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${chat.status === "pending" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
-                    {chat.status.charAt(0).toUpperCase() + chat.status.slice(1)}
-                  </span>
-                ) : (
-                  <span className="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">N/A</span>
-                )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="ml-2 flex items-center gap-2"
+                    >
+                      {loadingStates[chat._id] ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                      ) : chat.status === "pending" || chat.status === "completed" ? (
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold
+                          ${chat.status === "pending" ? "bg-red-100 text-red-700" : ""}
+                          ${chat.status === "completed" ? "bg-green-100 text-green-700" : ""}
+                        `}>
+                          {chat.status === "pending" && "Pending"}
+                          {chat.status === "completed" && "Completed"}
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">N/A</span>
+                      )}
+                      <ChevronDown className="h-4 w-4 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {getStatusOptions(chat.status).map((status) => (
+                      <DropdownMenuItem
+                        key={status}
+                        onClick={() => handleStatusChange(chat._id, status as any)}
+                        className="capitalize"
+                      >
+                        {status.replace("-", " ")}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               <div className="flex justify-end mt-2">
                 <a
@@ -153,3 +217,5 @@ export default function ChatQueries() {
     </Card>
   )
 }
+
+export default ChatQueries;

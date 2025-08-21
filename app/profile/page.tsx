@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -11,6 +11,7 @@ import { AppointmentSection } from "@/components/appointment-section"
 import CreateAppointment from "@/components/create-appointment"
 import PatientQueries from "@/components/patient-queries"
 import ChatQueries from "@/components/chat-queries"
+import axios from "axios"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { fetchAppointmentsAction, clearError } from "@/store/appointmentSlice"
 import { fetchQueriesAction } from "@/store/querySlice"
@@ -25,6 +26,40 @@ export default function ProfilePage() {
 
   const pendingAppointments = appointments.filter((apt) => apt.status === "pending" || !apt.status)
   const pendingQueries = queries.filter((query) => query.status === "pending")
+
+
+  // Chat Queries: fetch locally and use for badge and component
+  const [chatQueries, setChatQueries] = useState<any[]>([])
+  const [chatLoading, setChatLoading] = useState(false)
+  const firstLoad = useRef(true)
+  const [chatError, setChatError] = useState("")
+  const pendingChatQueries = chatQueries.filter((c: any) => c.status === "pending")
+
+  useEffect(() => {
+    let isMounted = true
+    let interval: NodeJS.Timeout | null = null
+    const fetchChats = async () => {
+      setChatError("")
+      if (firstLoad.current) setChatLoading(true)
+      try {
+        const res = await axios.get("https://dr-usama-sheikh-backend.vercel.app/api/chats")
+        if (isMounted) setChatQueries(res.data)
+      } catch (err: any) {
+        if (isMounted) setChatError(err.message || "Error fetching chat queries")
+      } finally {
+        if (firstLoad.current) {
+          setChatLoading(false)
+          firstLoad.current = false
+        }
+      }
+    }
+    fetchChats()
+    interval = setInterval(fetchChats, 5000)
+    return () => {
+      isMounted = false
+      if (interval) clearInterval(interval)
+    }
+  }, [])
 
   useEffect(() => {
     dispatch(fetchAppointmentsAction())
@@ -136,6 +171,11 @@ export default function ProfilePage() {
               <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Chat Queries</span>
               <span className="sm:hidden">Chats</span>
+              {pendingChatQueries.length > 0 && (
+                <span className="bg-orange-600 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[1.25rem] h-5 flex items-center justify-center">
+                  {pendingChatQueries.length}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger
               value="create-appointment"
@@ -164,7 +204,7 @@ export default function ProfilePage() {
           </TabsContent>
 
           <TabsContent value="chat-queries">
-            <ChatQueries />
+            <ChatQueries chats={chatQueries} loading={chatLoading} error={chatError} />
           </TabsContent>
           <TabsContent value="create-appointment">
             <CreateAppointment />

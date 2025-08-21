@@ -23,7 +23,7 @@ export function Header() {
   const router = useRouter()
   const dispatch = useAppDispatch()
   const { appointments } = useAppSelector((state) => state.appointments)
-  const { queries } = useAppSelector((state) => state.queries)
+  const { queries, chatQueries = [] } = useAppSelector((state: any) => state.queries || {})
   const [seenAppointments, setSeenAppointments] = useState<string[]>([])
   const [seenQueries, setSeenQueries] = useState<string[]>([])
 
@@ -55,7 +55,8 @@ export function Header() {
     (apt) => apt.status === "pending" || !apt.status || apt.status === undefined || apt.status === null,
   )
 
-  const pendingQueries = queries.filter((query) => query.status === "pending" || !query.status)
+  const pendingQueries = queries.filter((query: any) => query.status === "pending" || !query.status)
+  const pendingChatQueries = chatQueries.filter((c: any) => c.status === "pending")
 
   const unseenNotifications = pendingAppointments.filter((apt) => {
     const appointmentId = apt._id || apt.id
@@ -67,7 +68,8 @@ export function Header() {
     return queryId && !seenQueries.includes(queryId)
   })
 
-  const totalUnseenCount = unseenNotifications.length + unseenQueries.length
+  const unseenChatQueries = pendingChatQueries // For now, all pending chat queries are unseen
+  const totalUnseenCount = unseenNotifications.length + unseenQueries.length + unseenChatQueries.length
 
   const markAsSeen = (appointmentId: string) => {
     const updatedSeen = [...seenAppointments, appointmentId]
@@ -217,6 +219,33 @@ export function Header() {
                               </div>
                               <p className="text-xs sm:text-sm text-gray-600 truncate">{query.department}</p>
                               <p className="text-xs text-gray-500">{query.phone}</p>
+                            </div>
+                          </DropdownMenuItem>
+                        )
+                      })}
+                    </>
+                  )}
+                  {unseenChatQueries.length > 0 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel className="text-xs text-green-700 px-2">
+                        New Chat Queries ({unseenChatQueries.length})
+                      </DropdownMenuLabel>
+                      {unseenChatQueries.map((chat: any) => {
+                        const chatId = chat._id || chat.id
+                        return (
+                          <DropdownMenuItem
+                            key={chatId}
+                            className="cursor-pointer p-2 sm:p-3"
+                          >
+                            <div className="flex flex-col gap-1 w-full">
+                              <div className="flex justify-between items-start">
+                                <p className="font-medium text-xs sm:text-sm truncate pr-2">{chat.name}</p>
+                                <span className="text-xs text-gray-500 flex-shrink-0">
+                                  {getRelativeTime(chat.createdAt)}
+                                </span>
+                              </div>
+                              <p className="text-xs sm:text-sm text-gray-600 truncate">{chat.phone}</p>
                             </div>
                           </DropdownMenuItem>
                         )
