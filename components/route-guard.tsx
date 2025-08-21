@@ -19,6 +19,10 @@ export function RouteGuard({ children }: RouteGuardProps) {
     if (!isLoading && !user && pathname !== "/login") {
       router.push("/login")
     }
+    // If user is logged in and tries to access /login, redirect to /profile
+    if (!isLoading && user && pathname === "/login") {
+      router.push("/profile")
+    }
   }, [user, isLoading, pathname, router])
 
   if (isLoading) {

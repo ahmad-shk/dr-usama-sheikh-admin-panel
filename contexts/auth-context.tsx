@@ -46,12 +46,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false)
   }, [])
 
-  // Optionally, you can update this login to support backend login if needed
-  const login = async (username: string, password: string): Promise<boolean> => {
+  // Updated login to support backend login and set user
+  const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true)
-    // This is a placeholder for legacy login, not used with backend
-    setIsLoading(false)
-    return false
+    try {
+      const res = await fetch("https://dr-usama-sheikh-backend.vercel.app/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      })
+      const data = await res.json()
+      if (data && data.token && data.admin) {
+        localStorage.setItem("dental_admin_token", data.token)
+        localStorage.setItem("dental_admin_user", JSON.stringify(data.admin))
+        setUser(data.admin)
+        setIsLoading(false)
+        return true
+      } else {
+        setIsLoading(false)
+        return false
+      }
+    } catch (err) {
+      setIsLoading(false)
+      return false
+    }
   }
 
   const logout = () => {

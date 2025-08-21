@@ -40,20 +40,14 @@ export default function LoginPage() {
 
     setLoading(true)
     try {
-      const res = await axios.post("https://dr-usama-sheikh-backend.vercel.app/api/admin/login", {
-        email,
-        password,
-      })
-      if (res.data && res.data.token) {
-        console.log("succes")
-        localStorage.setItem("dental_admin_token", res.data.token)
-        localStorage.setItem("dental_admin_user", JSON.stringify(res.data.admin))
+      const success = await login(email, password)
+      if (success) {
         router.push("/profile")
       } else {
-        setError("Invalid response from server")
+        setError("Invalid email or password")
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "Invalid email or password")
+      setError("Login failed")
     } finally {
       setLoading(false)
     }

@@ -3,15 +3,13 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 
-const HARDCODED_TOKEN = "dental_admin_token_2024_secure"
 
 export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
     const token = localStorage.getItem("dental_admin_token")
-
-    if (token === HARDCODED_TOKEN) {
+    if (token) {
       router.push("/profile")
     } else {
       router.push("/login")

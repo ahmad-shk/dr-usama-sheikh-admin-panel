@@ -41,11 +41,10 @@ const ChatQueries: React.FC<ChatQueriesProps> = ({ chats = [], loading = false, 
   const handleStatusChange = async (chatId: string, newStatus: "pending" | "completed") => {
     setLoadingStates((prev) => ({ ...prev, [chatId]: true }))
     try {
-      // Map 'completed' to 'closed' for backend
-      const backendStatus = newStatus === "completed" ? "closed" : newStatus;
+      // Map 'completed' to 'completed' for backend, but always show 'completed' in UI
+      const backendStatus = newStatus === "completed" ? "completed" : newStatus;
       const updated = await chatAPI.updateChatStatus(chatId, backendStatus)
-      // Map 'closed' back to 'completed' for UI
-      setLocalChats((prev) => prev.map((c) => c._id === chatId ? { ...c, status: updated.status === "closed" ? "completed" : updated.status } : c))
+      setLocalChats((prev) => prev.map((c) => c._id === chatId ? { ...c, status: updated.status === "completed" ? "completed" : updated.status } : c))
     } catch (err) {
       // Optionally show error toast
     } finally {
