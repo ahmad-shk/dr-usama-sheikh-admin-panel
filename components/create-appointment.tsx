@@ -18,17 +18,40 @@ export default function CreateAppointment() {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
-    clinic: "Smile Dental Clinic",
+    clinic: "",
+    city: "", // Added city field to form data
     service: "",
     date: "",
     time: "",
     name: "",
     phone: "",
-    message: "",
+    gender: "",
+    age: "",
+    weight: "",
+    message: "First time visit",
     amount: "",
   })
 
+  const clinics = ["Shazia Subair Clinic", "Al Shaikh Clinic"]
+
+  const cities = ["Chichawatni", "Sahiwal", "Lahore"]
+
   const services = [
+    // Nutritionist Services
+    "نیوٹریشنسٹ - آنتوں کی بیماری (IBS)",
+    "نیوٹریشنسٹ - ذیابیطس (Diabetes)",
+    "نیوٹریشنسٹ - پولی سسٹک اووری سنڈروم (PCOS)",
+    "نیوٹریشنسٹ - وزن میں کمی (Weight Loss)",
+    "نیوٹریشنسٹ - وزن میں اضافہ (Weight Gain)",
+    "نیوٹریشنسٹ - دل اور بلڈ پریشر کے مریضوں کے لیے غذا (Diet for Cardiac & BP)",
+    "نیوٹریشنسٹ - ہڈیوں کا کمزور ہونا (Osteoporosis)",
+    // Orthopedic Services
+    "آرتھوپیڈک - ہڈیوں کا کمزور ہونا (Osteoporosis)",
+    "آرتھوپیڈک - جوڑوں کا درد (Joint Pain)",
+    "آرتھوپیڈک - پٹھوں کا درد (Muscle Pain)",
+    "آرتھوپیڈک - چوٹ یا حادثاتی زخم (Trauma)",
+    "آرتھوپیڈک - ریڑھ کی ہڈی کا درد (Spine Pain)",
+    // Dental Services
     "Root Canal",
     "Teeth Cleaning",
     "Tooth Extraction",
@@ -71,44 +94,6 @@ export default function CreateAppointment() {
     }))
   }
 
-  const sendConfirmationMessage = (appointmentData: any) => {
-    const formatPhoneNumber = (phone: string) => {
-      // Remove any existing country code or special characters
-      let cleanPhone = phone.replace(/[^\d]/g, "")
-
-      // If phone starts with 0, replace with 92
-      if (cleanPhone.startsWith("0")) {
-        cleanPhone = "92" + cleanPhone.substring(1)
-      }
-      // If phone doesn't start with 92, add it
-      else if (!cleanPhone.startsWith("92")) {
-        cleanPhone = "92" + cleanPhone
-      }
-
-      return cleanPhone
-    }
-
-    const message = `Hello ${appointmentData.name}! Your appointment is confirmed:
-
-📅 Date: ${appointmentData.date}
-⏰ Time: ${appointmentData.time}
-🏥 Service: ${appointmentData.service}
-📍 Clinic: ${appointmentData.clinic}${
-      appointmentData.amount
-        ? `
-💰 Amount: Rs. ${appointmentData.amount.toLocaleString()}`
-        : ""
-    }
-
-Please arrive 15 minutes early. Thank you!`
-
-    const encodedMessage = encodeURIComponent(message)
-    const formattedPhone = formatPhoneNumber(appointmentData.phone)
-    const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodedMessage}`
-
-    window.open(whatsappUrl, "_blank")
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -117,27 +102,31 @@ Please arrive 15 minutes early. Thank you!`
       const appointmentData = {
         ...formData,
         amount: formData.amount ? Number(formData.amount) : undefined,
+        age: formData.age ? Number(formData.age) : undefined,
+        weight: formData.weight ? Number(formData.weight) : undefined,
       }
       await createAppointment(appointmentData)
 
       dispatch(fetchAppointmentsAction())
 
-      sendConfirmationMessage(appointmentData)
-
       setFormData({
-        clinic: "Smile Dental Clinic",
+        clinic: "",
+        city: "",
         service: "",
         date: "",
         time: "",
         name: "",
         phone: "",
-        message: "",
+        gender: "",
+        age: "",
+        weight: "",
+        message: "First time visit",
         amount: "",
       })
 
       toast({
         title: "Success!",
-        description: "Appointment created successfully. Confirmation message sent to patient.",
+        description: "Appointment created successfully.", // Updated message to remove WhatsApp reference
         variant: "default",
       })
     } catch (error) {
@@ -202,6 +191,65 @@ Please arrive 15 minutes early. Thank you!`
                     required
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <User className="h-4 w-4 text-gray-500" />
+                    Gender *
+                  </label>
+                  <select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleInputChange}
+                    className="w-full h-11 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                    required
+                  >
+                    <option value="" className="text-gray-500">
+                      Select gender
+                    </option>
+                    <option value="Male" className="text-gray-900">
+                      Male
+                    </option>
+                    <option value="Female" className="text-gray-900">
+                      Female
+                    </option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <User className="h-4 w-4 text-gray-500" />
+                    Age
+                  </label>
+                  <Input
+                    name="age"
+                    type="number"
+                    value={formData.age}
+                    onChange={handleInputChange}
+                    placeholder="Enter age"
+                    min="1"
+                    max="120"
+                    className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-2 sm:col-span-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <User className="h-4 w-4 text-gray-500" />
+                    Weight (kg)
+                  </label>
+                  <Input
+                    name="weight"
+                    type="number"
+                    value={formData.weight}
+                    onChange={handleInputChange}
+                    placeholder="Enter weight in kg"
+                    min="1"
+                    max="500"
+                    step="0.1"
+                    className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:max-w-xs"
+                  />
+                </div>
               </div>
             </div>
 
@@ -216,17 +264,48 @@ Please arrive 15 minutes early. Thank you!`
                     <Building2 className="h-4 w-4 text-gray-500" />
                     Clinic Name *
                   </label>
-                  <Input
+                  <select
                     name="clinic"
                     value={formData.clinic}
                     onChange={handleInputChange}
-                    placeholder="Enter clinic name"
-                    className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full h-11 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
                     required
-                  />
+                  >
+                    <option value="" className="text-gray-500">
+                      Select clinic
+                    </option>
+                    {clinics.map((clinic) => (
+                      <option key={clinic} value={clinic} className="text-gray-900">
+                        {clinic}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-gray-500" />
+                    City *
+                  </label>
+                  <select
+                    name="city"
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    className="w-full h-11 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                    required
+                  >
+                    <option value="" className="text-gray-500">
+                      Select city
+                    </option>
+                    {cities.map((city) => (
+                      <option key={city} value={city} className="text-gray-900">
+                        {city}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2 sm:col-span-2">
                   <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                     <Stethoscope className="h-4 w-4 text-gray-500" />
                     Service Type *
@@ -352,7 +431,7 @@ Please arrive 15 minutes early. Thank you!`
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <div className="flex items-center gap-2">
